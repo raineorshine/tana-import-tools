@@ -1,15 +1,7 @@
 import { TanaIntermediateFile, TanaIntermediateNode, TanaIntermediateSummary } from '../../types/types';
 import { idgenerator } from '../../utils/utils';
 
-export type Sub = {
-  text: string;
-  subs?: Sub[];
-  _complete?: boolean;
-};
-
 export class TwitterConverter {
-  private nodesForImport: Map<string, TanaIntermediateNode> = new Map();
-
   private summary: TanaIntermediateSummary = {
     leafNodes: 0,
     topLevelNodes: 0,
@@ -20,39 +12,30 @@ export class TwitterConverter {
   };
 
   convert(fileContent: string): TanaIntermediateFile | undefined {
-    let subs: Sub[] = [];
-
-    const rootLevelNodes = [];
-    for (const sub of subs) {
-      rootLevelNodes.push(this.createTanaNode(sub));
-    }
+    const nodes: TanaIntermediateNode[] = [];
 
     return {
       version: 'TanaIntermediateFile V0.1',
       summary: this.summary,
-      nodes: [...rootLevelNodes],
+      nodes,
     };
   }
 
-  private createTanaNode(sub: Sub): TanaIntermediateNode {
-    const nodeForImport: TanaIntermediateNode = {
+  /** Creates a TanaIntemrediateNode with the given content and children. Sets created and editedAt timestamps to now and bumps the summary counts. */
+  private createTanaNode(content: string, children?: TanaIntermediateNode[]): TanaIntermediateNode {
+    // update summary
+    this.summary.totalNodes += 1;
+    if (!children?.length) {
+      this.summary.leafNodes += 1;
+    }
+
+    return {
       uid: idgenerator(),
-      name: sub.text,
-      children: [],
+      name: content,
+      children,
       createdAt: new Date().getTime(),
       editedAt: new Date().getTime(),
       type: 'node',
-      todoState: sub._complete ? 'done' : undefined,
     };
-
-    this.nodesForImport.set(nodeForImport.uid, nodeForImport);
-    this.summary.totalNodes += 1;
-
-    if (sub.subs) {
-      nodeForImport.children = sub.subs.map((s) => this.createTanaNode(s));
-    } else {
-      this.summary.leafNodes += 1;
-    }
-    return nodeForImport;
   }
 }
